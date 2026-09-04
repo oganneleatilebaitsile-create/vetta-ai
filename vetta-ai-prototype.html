@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vetta — Validation Gate</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400;500;600;700&display=swap');
+
+  :root {
+    --ink: #12181B;
+    --paper: #F5F2EC;
+    --paper-dim: #EAE5DA;
+    --line: #D9D2C2;
+    --go: #2E6E4E;
+    --go-bg: #E3EEE5;
+    --iterate: #A6702A;
+    --iterate-bg: #F3E9D8;
+    --kill: #A13B2E;
+    --kill-bg: #F3E1DC;
+    --accent: #3A5A6B;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--ink);
+    color: var(--paper);
+    font-family: 'Inter', sans-serif;
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+  }
+
+  .frame {
+    width: 100%;
+    max-width: 480px;
+    min-height: 100vh;
+    background: var(--ink);
+    display: flex;
+    flex-direction: column;
+  }
+
+  header {
+    padding: 32px 24px 20px;
+    border-bottom: 1px solid rgba(245,242,236,0.14);
+  }
+
+  .mark {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    letter-spacing: 0.06em;
+    color: rgba(245,242,236,0.55);
+    margin-bottom: 10px;
+  }
+
+  h1 {
+    font-family: 'Fraunces', serif;
+    font-weight: 600;
+    font-size: 30px;
+    line-height: 1.15;
+    margin: 0 0 8px;
+    color: var(--paper);
+  }
+
+  .tagline {
+    font-size: 14px;
+    line-height: 1.5;
+    color: rgba(245,242,236,0.65);
+    max-width: 34ch;
+  }
+
+  main {
+    flex: 1;
+    padding: 24px;
+  }
+
+  .gate-label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    color: rgba(245,242,236,0.45);
+    margin-bottom: 10px;
+  }
+
+  textarea {
+    width: 100%;
+    background: rgba(245,242,236,0.06);
+    border: 1px solid rgba(245,242,236,0.22);
+    border-radius: 3px;
+    color: var(--paper);
+    font-family: 'Inter', sans-serif;
+    font-size: 16px;
+    padding: 14px;
+    resize: none;
+    min-height: 84px;
+    line-height: 1.5;
+  }
+
+  textarea:focus {
+    outline: none;
+    border-color: rgba(245,242,236,0.5);
+  }
+
+  textarea::placeholder { color: rgba(245,242,236,0.35); }
+
+  button.run {
+    margin-top: 14px;
+    width: 100%;
+    background: var(--paper);
+    color: var(--ink);
+    border: none;
+    border-radius: 3px;
+    padding: 14px;
+    font-family: 'Inter', sans-serif;
+    font-weight: 600;
+    font-size: 15px;
+    cursor: pointer;
+    transition: transform 0.12s ease;
+  }
+
+  button.run:active { transform: scale(0.98); }
+  button.run:disabled { opacity: 0.5; }
+
+  .checks {
+    margin-top: 28px;
+    display: none;
+  }
+
+  .checks.active { display: block; }
+
+  .check-row {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    padding: 12px 0;
+    border-bottom: 1px solid rgba(245,242,236,0.12);
+    font-size: 14px;
+  }
+
+  .check-row .name { color: rgba(245,242,236,0.75); }
+  .check-row .val {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 13px;
+    color: rgba(245,242,236,0.9);
+  }
+
+  .report {
+    margin-top: 28px;
+    background: var(--paper);
+    color: var(--ink);
+    border-radius: 4px;
+    padding: 24px 20px;
+    display: none;
+  }
+
+  .report.active { display: block; }
+
+  .score-row {
+    display: flex;
+    align-items: flex-end;
+    gap: 14px;
+    margin-bottom: 18px;
+  }
+
+  .score-num {
+    font-family: 'Fraunces', serif;
+    font-weight: 600;
+    font-size: 56px;
+    line-height: 1;
+  }
+
+  .score-max {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 13px;
+    color: rgba(18,24,27,0.5);
+    padding-bottom: 8px;
+  }
+
+  .badge {
+    display: inline-block;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    letter-spacing: 0.04em;
+    padding: 5px 10px;
+    border-radius: 3px;
+    font-weight: 500;
+    margin-bottom: 18px;
+  }
+
+  .badge.go { background: var(--go-bg); color: var(--go); }
+  .badge.iterate { background: var(--iterate-bg); color: var(--iterate); }
+  .badge.kill { background: var(--kill-bg); color: var(--kill); }
+
+  .reasons { margin: 0; padding: 0; list-style: none; }
+
+  .reasons li {
+    display: flex;
+    gap: 10px;
+    padding: 10px 0;
+    border-top: 1px solid var(--line);
+    font-size: 14px;
+    line-height: 1.5;
+  }
+
+  .reasons li:first-child { border-top: none; }
+
+  .reasons .dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--accent);
+    margin-top: 8px;
+    flex-shrink: 0;
+  }
+
+  .unlock {
+    margin-top: 20px;
+    padding-top: 18px;
+    border-top: 1px solid var(--line);
+    font-size: 13px;
+    color: rgba(18,24,27,0.6);
+    line-height: 1.5;
+  }
+
+  .unlock strong { color: var(--ink); }
+
+  footer {
+    padding: 18px 24px 28px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: rgba(245,242,236,0.35);
+    border-top: 1px solid rgba(245,242,236,0.1);
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .checks.active .check-row { animation: fadeIn 0.3s ease backwards; }
+    .checks.active .check-row:nth-child(1) { animation-delay: 0.05s; }
+    .checks.active .check-row:nth-child(2) { animation-delay: 0.2s; }
+    .checks.active .check-row:nth-child(3) { animation-delay: 0.35s; }
+    .report.active { animation: fadeIn 0.4s ease 0.5s backwards; }
+  }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+</style>
+</head>
+<body>
+<div class="frame">
+  <header>
+    <div class="mark">VETTA — VALIDATION GATE</div>
+    <h1>Check before you build.</h1>
+    <div class="tagline">Describe a business idea. Vetta runs the demand check autonomous builders skip — before a line of code or a dollar gets spent.</div>
+  </header>
+
+  <main>
+    <div class="gate-label">01 — YOUR IDEA</div>
+    <textarea id="ideaInput" placeholder="e.g. A subscription box for local African coffee roasters, delivered monthly across Botswana">A subscription box for local African coffee roasters, delivered monthly across Botswana</textarea>
+    <button class="run" id="runBtn">Run validation check</button>
+
+    <div class="checks" id="checks">
+      <div class="gate-label" style="margin-top:4px;">02 — SIGNAL CHECK</div>
+      <div class="check-row"><span class="name">Search demand</span><span class="val" id="v1">—</span></div>
+      <div class="check-row"><span class="name">Competitor saturation</span><span class="val" id="v2">—</span></div>
+      <div class="check-row"><span class="name">Smoke-test signups</span><span class="val" id="v3">—</span></div>
+    </div>
+
+    <div class="report" id="report">
+      <div class="gate-label" style="color:rgba(18,24,27,0.45);">03 — VALIDATION REPORT</div>
+      <div class="score-row">
+        <div class="score-num" id="scoreNum">—</div>
+        <div class="score-max">/ 100</div>
+      </div>
+      <div class="badge" id="badge">—</div>
+      <ul class="reasons" id="reasons"></ul>
+      <div class="unlock" id="unlock"></div>
+    </div>
+  </main>
+
+  <footer>PROTOTYPE — DEMO SCORING MODEL, NOT LIVE DATA</footer>
+</div>
+
+<script>
+const runBtn = document.getElementById('runBtn');
+const checksEl = document.getElementById('checks');
+const reportEl = document.getElementById('report');
+const ideaInput = document.getElementById('ideaInput');
+
+function hashString(s) {
+  let h = 0;
+  for (let i = 0; i < s.length; i++) {
+    h = (h << 5) - h + s.charCodeAt(i);
+    h |= 0;
+  }
+  return Math.abs(h);
+}
+
+function seededRandom(seed) {
+  let x = Math.sin(seed) * 10000;
+  return x - Math.floor(x);
+}
+
+runBtn.addEventListener('click', () => {
+  const idea = ideaInput.value.trim();
+  if (!idea) return;
+
+  runBtn.disabled = true;
+  runBtn.textContent = 'Running checks…';
+  checksEl.classList.remove('active');
+  reportEl.classList.remove('active');
+  void checksEl.offsetWidth;
+
+  const seed = hashString(idea);
+  const demand = Math.floor(seededRandom(seed) * 60) + 30;
+  const saturation = Math.floor(seededRandom(seed + 1) * 60) + 20;
+  const signups = Math.floor(seededRandom(seed + 2) * 50) + 5;
+
+  setTimeout(() => {
+    document.getElementById('v1').textContent = demand > 60 ? 'Rising' : demand > 40 ? 'Steady' : 'Low';
+    document.getElementById('v2').textContent = saturation > 60 ? 'Crowded' : saturation > 35 ? 'Moderate' : 'Open';
+    document.getElementById('v3').textContent = signups + ' signups / 200 views';
+    checksEl.classList.add('active');
+  }, 200);
+
+  setTimeout(() => {
+    const score = Math.round((demand * 0.4) + ((100 - saturation) * 0.35) + (signups * 0.5));
+    const clamped = Math.max(8, Math.min(96, score));
+
+    let verdict, badgeClass, unlockText;
+    if (clamped >= 65) {
+      verdict = 'BUILD';
+      badgeClass = 'go';
+      unlockText = '<strong>Gate cleared.</strong> Build/spend autonomy unlocked — agent may proceed to MVP scaffolding with a $50 sandbox budget and human approval on anything beyond it.';
+    } else if (clamped >= 40) {
+      verdict = 'ITERATE';
+      badgeClass = 'iterate';
+      unlockText = '<strong>Gate held.</strong> Signal is mixed — agent will suggest a narrower angle and re-run the check before any build access is granted.';
+    } else {
+      verdict = 'KILL';
+      badgeClass = 'kill';
+      unlockText = '<strong>Gate closed.</strong> No build or spend access granted. Agent logs the idea and reasoning for reference, then stops.';
+    }
+
+    const reasons = [
+      demand > 55 ? 'Search interest is trending upward over the last check window.' : 'Search interest is flat or declining — limited organic pull right now.',
+      saturation > 55 ? 'Several established players already serve this exact need.' : 'Competitive landscape has real gaps worth targeting.',
+      signups > 25 ? 'Smoke-test landing page converted well above baseline.' : 'Smoke-test signups came in below the threshold for confidence.'
+    ];
+
+    document.getElementById('scoreNum').textContent = clamped;
+    const badgeEl = document.getElementById('badge');
+    badgeEl.textContent = verdict;
+    badgeEl.className = 'badge ' + badgeClass;
+
+    const reasonsEl = document.getElementById('reasons');
+    reasonsEl.innerHTML = '';
+    reasons.forEach(r => {
+      const li = document.createElement('li');
+      li.innerHTML = '<span class="dot"></span><span>' + r + '</span>';
+      reasonsEl.appendChild(li);
+    });
+
+    document.getElementById('unlock').innerHTML = unlockText;
+    reportEl.classList.add('active');
+
+    runBtn.disabled = false;
+    runBtn.textContent = 'Run validation check';
+  }, 900);
+});
+</script>
+</body>
+</html>
