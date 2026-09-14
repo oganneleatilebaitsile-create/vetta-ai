@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vetta — Validation Gate</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400;500;600;700&display=swap');
+
+  :root {
+    --ink: #12181B;
+    --paper: #F5F2EC;
+    --line: #D9D2C2;
+    --go: #2E6E4E;
+    --go-bg: #E3EEE5;
+    --accent: #3A5A6B;
+    --mic-idle: #3A5A6B;
+    --mic-live: #A13B2E;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--ink); color: var(--paper);
+    font-family: 'Inter', sans-serif; min-height: 100vh;
+    display: flex; justify-content: center;
+  }
+  .frame { width: 100%; max-width: 480px; min-height: 100vh; display: flex; flex-direction: column; }
+  header { padding: 30px 22px 18px; border-bottom: 1px solid rgba(245,242,236,0.14); }
+  .mark { font-family: 'IBM Plex Mono', monospace; font-size: 12px; letter-spacing: 0.06em; color: rgba(245,242,236,0.55); margin-bottom: 10px; }
+  h1 { font-family: 'Fraunces', serif; font-weight: 600; font-size: 28px; margin: 0 0 8px; }
+  .tagline { font-size: 14px; line-height: 1.55; color: rgba(245,242,236,0.7); max-width: 36ch; }
+  main { flex: 1; padding: 22px; display: flex; flex-direction: column; align-items: center; }
+
+  .mic-wrap { margin: 24px 0 10px; display: flex; flex-direction: column; align-items: center; }
+  .mic-btn {
+    width: 96px; height: 96px; border-radius: 50%; border: none;
+    background: var(--mic-idle); color: var(--paper);
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; transition: background 0.2s ease, transform 0.15s ease;
+  }
+  .mic-btn.live { background: var(--mic-live); animation: pulse 1.4s ease-in-out infinite; }
+  .mic-btn:active { transform: scale(0.96); }
+  .mic-btn:disabled { opacity: 0.5; cursor: default; }
+  @keyframes pulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(161,59,46,0.4); }
+    50% { box-shadow: 0 0 0 16px rgba(161,59,46,0); }
+  }
+  .mic-status { margin-top: 14px; font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: rgba(245,242,236,0.55); text-align: center; min-height: 16px; }
+
+  .transcript {
+    width: 100%; margin-top: 24px; background: rgba(245,242,236,0.05);
+    border: 1px solid rgba(245,242,236,0.16); border-radius: 4px;
+    padding: 16px; min-height: 220px; max-height: 420px; overflow-y: auto;
+    display: flex; flex-direction: column; gap: 12px;
+  }
+  .transcript.empty { align-items: center; justify-content: center; }
+  .transcript-empty-text { font-size: 13px; color: rgba(245,242,236,0.4); font-style: italic; text-align: center; max-width: 30ch; }
+
+  .line { display: flex; flex-direction: column; gap: 3px; max-width: 90%; }
+  .line.user { align-self: flex-end; align-items: flex-end; }
+  .line.agent { align-self: flex-start; align-items: flex-start; }
+  .line .who { font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: 0.05em; color: rgba(245,242,236,0.4); }
+  .line .bubble { font-size: 14px; line-height: 1.5; padding: 9px 12px; border-radius: 4px; }
+  .line.user .bubble { background: var(--accent); color: var(--paper); }
+  .line.agent .bubble { background: var(--paper); color: var(--ink); }
+
+  .error-box {
+    width: 100%; margin-top: 16px; background: #F3E1DC; color: #A13B2E;
+    border-radius: 4px; padding: 12px 14px; font-size: 13px; line-height: 1.5; display: none;
+  }
+  .error-box.active { display: block; }
+
+  footer { padding: 18px 22px 26px; font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: rgba(245,242,236,0.35); border-top: 1px solid rgba(245,242,236,0.1); text-align: center; }
+</style>
+</head>
+<body>
+<div class="frame">
+  <header>
+    <div class="mark">VETTA — VALIDATION GATE</div>
+    <h1>Talk it through.</h1>
+    <div class="tagline">Tell Vetta your business idea. It'll think it through out loud and tell you honestly whether it's worth building.</div>
+  </header>
+
+  <main>
+    <div class="mic-wrap">
+      <button class="mic-btn" id="micBtn" aria-label="Start conversation">
+        <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+          <path d="M12 15a3 3 0 0 0 3-3V6a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3z"/>
+          <path d="M19 11a7 7 0 0 1-14 0M12 18v3"/>
+        </svg>
+      </button>
+      <div class="mic-status" id="micStatus">Tap to start talking to Vetta</div>
+    </div>
+
+    <div class="transcript empty" id="transcript">
+      <div class="transcript-empty-text">Your conversation will appear here as you talk.</div>
+    </div>
+
+    <div class="error-box" id="errorBox"></div>
+  </main>
+
+  <footer>LIVE — CONNECTED TO ASSEMBLYAI VOICE AGENT · CHROME RECOMMENDED</footer>
+</div>
+
+<script>
+const micBtn = document.getElementById('micBtn');
+const micStatus = document.getElementById('micStatus');
+const transcriptEl = document.getElementById('transcript');
+const errorBox = document.getElementById('errorBox');
+
+let ws = null;
+let audioCtx = null;
+let worklet = null;
+let stream = null;
+let ready = false;
+let live = false;
+let playbackTime = 0;
+
+function showError(msg) {
+  errorBox.textContent = msg;
+  errorBox.classList.add('active');
+}
+function clearError() {
+  errorBox.classList.remove('active');
+  errorBox.textContent = '';
+}
+
+function addLine(who, text) {
+  if (transcriptEl.classList.contains('empty')) {
+    transcriptEl.classList.remove('empty');
+    transcriptEl.innerHTML = '';
+  }
+  const line = document.createElement('div');
+  line.className = 'line ' + who;
+  const label = document.createElement('div');
+  label.className = 'who';
+  label.textContent = who === 'user' ? 'YOU' : 'VETTA';
+  const bubble = document.createElement('div');
+  bubble.className = 'bubble';
+  bubble.textContent = text;
+  line.appendChild(label);
+  line.appendChild(bubble);
+  transcriptEl.appendChild(line);
+  transcriptEl.scrollTop = transcriptEl.scrollHeight;
+}
+
+// Inline AudioWorklet processor, loaded as a Blob so this stays a single file.
+const workletCode = `
+class PCMProcessor extends AudioWorkletProcessor {
+  constructor(options) {
+    super();
+    const { inputSampleRate, targetSampleRate } = options.processorOptions;
+    this.ratio = inputSampleRate / targetSampleRate;
+  }
+  process(inputs) {
+    const input = inputs[0]?.[0];
+    if (!input) return true;
+    const outLength = Math.floor(input.length / this.ratio);
+    const pcm16 = new Int16Array(outLength);
+    for (let i = 0; i < outLength; i++) {
+      const sample = input[Math.floor(i * this.ratio)] ?? 0;
+      pcm16[i] = Math.max(-32768, Math.min(32767, Math.round(sample * 32767)));
+    }
+    this.port.postMessage(pcm16.buffer, [pcm16.buffer]);
+    return true;
+  }
+}
+registerProcessor('pcm-processor', PCMProcessor);
+`;
+
+async function startConversation() {
+  clearError();
+  micBtn.disabled = true;
+  micStatus.textContent = 'Connecting…';
+
+  try {
+    const { token, agentId } = await fetch('/api/voice-token').then(r => {
+      if (!r.ok) throw new Error('Token request failed — check the server is running and .env is set up');
+      return r.json();
+    });
+
+    audioCtx = new AudioContext();
+    const blob = new Blob([workletCode], { type: 'application/javascript' });
+    await audioCtx.audioWorklet.addModule(URL.createObjectURL(blob));
+
+    worklet = new AudioWorkletNode(audioCtx, 'pcm-processor', {
+      processorOptions: { inputSampleRate: audioCtx.sampleRate, targetSampleRate: 24000 }
+    });
+
+    stream = await navigator.mediaDevices.getUserMedia({
+      audio: { echoCancellation: true, noiseSuppression: false }
+    });
+    const source = audioCtx.createMediaStreamSource(stream);
+
+    worklet.port.onmessage = (e) => {
+      if (ready && ws && ws.readyState === WebSocket.OPEN) {
+        const bytes = new Uint8Array(e.data);
+        let binary = '';
+        for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
+        ws.send(JSON.stringify({ type: 'input.audio', audio: btoa(binary) }));
+      }
+    };
+    source.connect(worklet).connect(audioCtx.destination);
+
+    const wsUrl = new URL('wss://agents.assemblyai.com/v1/ws');
+    wsUrl.searchParams.set('token', token);
+    ws = new WebSocket(wsUrl);
+    playbackTime = audioCtx.currentTime;
+
+    ws.addEventListener('open', () => {
+      ws.send(JSON.stringify({ type: 'session.update', session: { agent_id: agentId } }));
+    });
+
+    ws.addEventListener('message', (event) => {
+      const msg = JSON.parse(event.data);
+
+      if (msg.type === 'session.ready') {
+        ready = true;
+        live = true;
+        micBtn.disabled = false;
+        micBtn.classList.add('live');
+        micStatus.textContent = 'Listening — talk whenever you\\'re ready';
+      } else if (msg.type === 'reply.audio') {
+        const raw = atob(msg.data);
+        const pcm16 = new Int16Array(raw.length / 2);
+        for (let i = 0; i < pcm16.length; i++) {
+          pcm16[i] = raw.charCodeAt(i * 2) | (raw.charCodeAt(i * 2 + 1) << 8);
+        }
+        const float32 = new Float32Array(pcm16.length);
+        for (let i = 0; i < pcm16.length; i++) float32[i] = pcm16[i] / 32768;
+        const buffer = audioCtx.createBuffer(1, float32.length, 24000);
+        buffer.getChannelData(0).set(float32);
+        const src = audioCtx.createBufferSource();
+        src.buffer = buffer;
+        src.connect(audioCtx.destination);
+        const now = audioCtx.currentTime;
+        playbackTime = Math.max(playbackTime, now);
+        src.start(playbackTime);
+        playbackTime += buffer.duration;
+      } else if (msg.type === 'reply.done' && msg.status === 'interrupted') {
+        playbackTime = audioCtx.currentTime;
+      } else if (msg.type === 'transcript.user' && msg.text) {
+        addLine('user', msg.text);
+      } else if (msg.type === 'transcript.agent' && msg.text) {
+        addLine('agent', msg.text);
+      } else if (msg.type === 'session.error' || msg.type === 'error') {
+        showError(msg.message || 'Something went wrong with the session.');
+      }
+    });
+
+    ws.addEventListener('close', () => {
+      live = false;
+      micBtn.classList.remove('live');
+      micStatus.textContent = 'Conversation ended — tap to start again';
+    });
+
+    ws.addEventListener('error', () => {
+      showError('Connection error — check your API key and agent ID in .env, and that the server is running.');
+    });
+
+  } catch (err) {
+    console.error(err);
+    showError(err.message || 'Could not start the conversation.');
+    micBtn.disabled = false;
+    micStatus.textContent = 'Tap to start talking to Vetta';
+  }
+}
+
+function endConversation() {
+  if (ws && ws.readyState === WebSocket.OPEN) {
+    ws.send(JSON.stringify({ type: 'session.end' }));
+  }
+  stream?.getTracks().forEach(t => t.stop());
+  audioCtx?.close();
+  live = false;
+  ready = false;
+  micBtn.classList.remove('live');
+  micBtn.disabled = false;
+  micStatus.textContent = 'Tap to start talking to Vetta';
+}
+
+micBtn.addEventListener('click', () => {
+  if (live) {
+    endConversation();
+  } else {
+    startConversation();
+  }
+});
+
+window.addEventListener('pagehide', () => {
+  if (ws && ws.readyState === WebSocket.OPEN) {
+    ws.send(JSON.stringify({ type: 'session.end' }));
+  }
+});
+</script>
+</body>
+</html>

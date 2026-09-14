@@ -1,0 +1,13 @@
+{
+  "name": "vetta-voice-live",
+  "version": "1.0.0",
+  "description": "Vetta AI — live voice agent frontend + token server",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "dotenv": "^16.4.5"
+  }
+}
